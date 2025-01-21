@@ -68,8 +68,6 @@ class GPTAgent:
         # Inseriamo il system prompt come primo messaggio, ma non lo mostreremo a schermo.
         messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
 
-        print("Messaggi inviati ad Azure OpenAI:", messages)
-
         response = self.streaming_query(messages)
         yield from self.process_stream(response)
 
@@ -126,6 +124,4 @@ def generate_follow_up_suggestions(agent: GPTAgent, conversation: list):
 
     # Prendiamo il testo della risposta
     content = response.choices[0].message.parsed
-    print("Risposta di Azure OpenAI:", content)
-    # print("Risposta di Azure OpenAI:", content["questions"])
     return [question.text for question in content.questions]

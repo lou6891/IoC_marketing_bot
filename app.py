@@ -1,19 +1,26 @@
 import streamlit as st
 from src.agent import GPTAgent, generate_follow_up_suggestions
 
-gpt_agent = GPTAgent()
+
 logo_url = "https://www.otticoincloud.it/wp-content/uploads/2023/10/OIC-Favicon.png"  # Replace with your logo URL
 user_png = "public/user.png"
 bot_png = "public/bot_round.png"
+
+
 # =============================================================================
 #                             MAIN APP
 # =============================================================================
 def main():
+    st.set_page_config(page_title="OiC Bot", page_icon=logo_url)
 
-    st.set_page_config(page_title = "OiC Bot", page_icon=logo_url)
+    gpt_agent = GPTAgent(
+        st.secrets["AZURE_OPENAI_API_KEY"],
+        st.secrets["AZURE_OPENAI_ENDPOINT"],
+        st.secrets["AZURE_OPENAI_MODEL_NAME"],
+    )
 
     st.markdown(
-    """
+        """
     <style>
         body {
             background-color: white;
@@ -52,11 +59,14 @@ def main():
         }
     </style>
     """,
-    unsafe_allow_html=True,
-)
+        unsafe_allow_html=True,
+    )
 
     # Add a custom logo to the top-left
-    st.markdown(f'<img src="{logo_url}" class="custom-logo" width="150">', unsafe_allow_html=True)
+    st.markdown(
+        f'<img src="{logo_url}" class="custom-logo" width="150">',
+        unsafe_allow_html=True,
+    )
 
     # Adjust the title to align properly with space for the logo
     st.markdown(
@@ -66,7 +76,7 @@ def main():
             <h2 class="app-subtitle">Generatore marketing</h2>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     # st.title("Ottico in Cloud - Chatbot")
@@ -76,17 +86,18 @@ def main():
         st.session_state["messages"] = []
     if "follow_ups" not in st.session_state:
         st.session_state["follow_ups"] = []
-    
+
     # Variabile di sessione per gestire un input proveniente dal click su un follow-up
     if "pending_user_input" not in st.session_state:
         st.session_state["pending_user_input"] = ""
-
 
     # Mostriamo i messaggi esistenti (esclusi "system")
     for message in st.session_state["messages"]:
         if message["role"] == "system":
             continue
-        with st.chat_message(message["role"], avatar=user_png if message["role"] == "user" else bot_png):
+        with st.chat_message(
+            message["role"], avatar=user_png if message["role"] == "user" else bot_png
+        ):
             st.markdown(message["content"])
 
     # 1. Leggiamo la chat_input
@@ -104,7 +115,7 @@ def main():
         st.session_state["messages"].append({"role": "user", "content": chat_text})
 
         # Visualizziamo il messaggio dell'utente
-        with st.chat_message("user", avatar=user_png ):
+        with st.chat_message("user", avatar=user_png):
             st.markdown(chat_text)
 
         # Prepara un contenitore per la risposta in streaming
@@ -120,10 +131,14 @@ def main():
                 assistant_placeholder.markdown(assistant_response)
 
         # Salviamo la risposta finale
-        st.session_state["messages"].append({"role": "assistant", "content": assistant_response})
+        st.session_state["messages"].append(
+            {"role": "assistant", "content": assistant_response}
+        )
 
         # Generazione follow-up
-        suggestions = generate_follow_up_suggestions(gpt_agent, st.session_state["messages"])
+        suggestions = generate_follow_up_suggestions(
+            gpt_agent, st.session_state["messages"]
+        )
         st.session_state["follow_ups"] = suggestions
 
     # Mostriamo i suggerimenti di follow-up
