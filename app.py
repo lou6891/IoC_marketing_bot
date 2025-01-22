@@ -1,17 +1,108 @@
 import streamlit as st
 from src.agent import GPTAgent, generate_follow_up_suggestions
+from src.constants import (
+    FRONTEND_HTML_STYLES,
+    FRONTEND_BOT_ICON,
+    FRONTEND_OIC_LOGO_URL,
+    FRONTEND_USER_ICON,
+)
 
 
-logo_url = "https://www.otticoincloud.it/wp-content/uploads/2023/10/OIC-Favicon.png"  # Replace with your logo URL
-user_png = "public/user.png"
-bot_png = "public/bot_round.png"
+def process_and_display_gpt_streaming_response(
+    gpt_agent: GPTAgent, bot_icon: str
+) -> str:
+    assistant_placeholder = st.empty()
+    assistant_response = ""
+
+    with st.chat_message("assistant", avatar=bot_icon):
+        stream_response = gpt_agent.run(st.session_state["messages"])
+
+        for chunk in stream_response:
+            assistant_response += chunk
+            assistant_placeholder.markdown(assistant_response)
+
+    st.session_state["messages"].append(
+        {"role": "assistant", "content": assistant_response}
+    )
 
 
-# =============================================================================
-#                             MAIN APP
-# =============================================================================
-def main():
-    st.set_page_config(page_title="OiC Bot", page_icon=logo_url)
+def generate_follow_up_suggestion(gpt_agent: GPTAgent) -> str:
+    suggestions = generate_follow_up_suggestions(
+        gpt_agent, st.session_state["messages"]
+    )
+    st.session_state["follow_ups"] = suggestions
+
+
+def display_user_message_to_chat(chat_text: str, user_icon: str):
+    with st.chat_message("user", avatar=user_icon):
+        st.markdown(chat_text)
+
+
+def handle_and_display_follow_up_suggestions() -> None:
+    if st.session_state["follow_ups"]:
+        st.markdown("**Suggerimenti di follow-up:**")
+        for i, suggestion in enumerate(st.session_state["follow_ups"], start=1):
+            if st.button(f"{i}. {suggestion}", key=f"follow_up_{i}"):
+                # add follow up to pending user input, which is needed to run the agent with the follow up question
+                st.session_state["pending_user_input"] = suggestion
+
+                # reset follow up, update the frontend
+                st.session_state["follow_ups"] = []
+                st.rerun()
+
+
+def display_conversation_history(user_icon: str, bot_icon: str) -> None:
+    for message in st.session_state["messages"]:
+        if message["role"] == "system":
+            continue
+        with st.chat_message(
+            message["role"], avatar=user_icon if message["role"] == "user" else bot_icon
+        ):
+            st.markdown(message["content"])
+
+
+def chat_component(
+    gpt_agent: GPTAgent,
+    user_icon: str = FRONTEND_USER_ICON,
+    bot_icon: str = FRONTEND_BOT_ICON,
+) -> None:
+    # INITIALIZE SESSION STATES #######################################################################################
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = []
+    if "follow_ups" not in st.session_state:
+        st.session_state["follow_ups"] = []
+
+    if "pending_user_input" not in st.session_state:
+        st.session_state["pending_user_input"] = ""
+
+    # Show existing messages
+    display_conversation_history(user_icon, bot_icon)
+
+    chat_text = st.chat_input("Inserisci il tuo messaggio qui...")
+
+    # The user has clicked on a follow up, use the follow up as chat input to query the model
+    if st.session_state["pending_user_input"]:
+        chat_text = st.session_state["pending_user_input"]
+        st.session_state["pending_user_input"] = ""
+
+    # if the user has selected a follow up (chat_text = pending_user_input) or has sent a message
+    if chat_text:
+        st.session_state["messages"].append({"role": "user", "content": chat_text})
+
+        display_user_message_to_chat(chat_text, user_icon)
+        process_and_display_gpt_streaming_response(gpt_agent, bot_icon)
+
+        generate_follow_up_suggestion(gpt_agent)
+
+    handle_and_display_follow_up_suggestions()
+
+
+def main(
+    oic_logo_url: str = FRONTEND_OIC_LOGO_URL,
+    user_icon: str = FRONTEND_USER_ICON,
+    bot_icon: str = FRONTEND_BOT_ICON,
+):
+    st.set_page_config(page_title="OiC Bot", page_icon=oic_logo_url)
 
     gpt_agent = GPTAgent(
         st.secrets["AZURE_OPENAI_API_KEY"],
@@ -20,51 +111,13 @@ def main():
     )
 
     st.markdown(
-        """
-    <style>
-        body {
-            background-color: white;
-        }
-        .block-container {
-            padding-top: 40px;
-        }
-        .custom-logo {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            padding-top: 15px;
-        }
-        .app-title-container {
-            margin-left: 250px;
-            padding-top: 0px;
-            padding-bottom: 10px;
-        }
-        h1.app-title {
-            margin: 0;
-            font-weight: bold;
-            font-size: 3.5em;
-            padding-top: 5px;
-            padding-bottom: 0px;
-        }
-        h2.app-subtitle {
-            margin: 0;
-            font-size: 2em;
-            font-weight: bold;
-            /*
-            white-space: nowrap;
-            overflow: visible;
-            padding-top: 0px;
-            */
-        }
-    </style>
-    """,
+        FRONTEND_HTML_STYLES,
         unsafe_allow_html=True,
     )
 
-    # Add a custom logo to the top-left
+    # TITLE ###########################################################################################################
     st.markdown(
-        f'<img src="{logo_url}" class="custom-logo" width="150">',
+        f'<img src="{oic_logo_url}" class="custom-logo" width="150">',
         unsafe_allow_html=True,
     )
 
@@ -79,79 +132,8 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # st.title("Ottico in Cloud - Chatbot")
-
-    # Inizializziamo la session state
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = []
-    if "follow_ups" not in st.session_state:
-        st.session_state["follow_ups"] = []
-
-    # Variabile di sessione per gestire un input proveniente dal click su un follow-up
-    if "pending_user_input" not in st.session_state:
-        st.session_state["pending_user_input"] = ""
-
-    # Mostriamo i messaggi esistenti (esclusi "system")
-    for message in st.session_state["messages"]:
-        if message["role"] == "system":
-            continue
-        with st.chat_message(
-            message["role"], avatar=user_png if message["role"] == "user" else bot_png
-        ):
-            st.markdown(message["content"])
-
-    # 1. Leggiamo la chat_input
-    chat_text = st.chat_input("Inserisci il tuo messaggio qui...")
-
-    # 2. Se la variabile pending_user_input ha un testo, lo usiamo come se fosse chat_input.
-    #    E resettiamo pending_user_input a stringa vuota.
-    if st.session_state["pending_user_input"]:
-        chat_text = st.session_state["pending_user_input"]
-        st.session_state["pending_user_input"] = ""
-
-    # Se abbiamo qualche testo (da chat_input o da follow-up), processiamo
-    if chat_text:
-        # Aggiungiamo il messaggio dell'utente alla sessione
-        st.session_state["messages"].append({"role": "user", "content": chat_text})
-
-        # Visualizziamo il messaggio dell'utente
-        with st.chat_message("user", avatar=user_png):
-            st.markdown(chat_text)
-
-        # Prepara un contenitore per la risposta in streaming
-        assistant_placeholder = st.empty()
-
-        # Istanzia l'agente
-        assistant_response = ""
-        with st.chat_message("assistant", avatar=bot_png):
-            # Inviamo tutti i messaggi (incluso system prompt) al modello, in streaming
-            stream_response = gpt_agent.run(st.session_state["messages"])
-            for chunk in stream_response:
-                assistant_response += chunk
-                assistant_placeholder.markdown(assistant_response)
-
-        # Salviamo la risposta finale
-        st.session_state["messages"].append(
-            {"role": "assistant", "content": assistant_response}
-        )
-
-        # Generazione follow-up
-        suggestions = generate_follow_up_suggestions(
-            gpt_agent, st.session_state["messages"]
-        )
-        st.session_state["follow_ups"] = suggestions
-
-    # Mostriamo i suggerimenti di follow-up
-    if st.session_state["follow_ups"]:
-        st.markdown("**Suggerimenti di follow-up:**")
-        for i, suggestion in enumerate(st.session_state["follow_ups"], start=1):
-            if st.button(f"{i}. {suggestion}", key=f"follow_up_{i}"):
-                # Al click, mettiamo il testo scelto in pending_user_input
-                st.session_state["pending_user_input"] = suggestion
-                # Se vuoi, svuota i follow-up:
-                st.session_state["follow_ups"] = []
-                # Forziamo un reload immediato per processare la richiesta
-                st.rerun()
+    # chat ############################################################################################################
+    chat_component(gpt_agent, user_icon, bot_icon)
 
 
 if __name__ == "__main__":
