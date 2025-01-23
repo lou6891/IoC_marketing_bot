@@ -88,10 +88,12 @@ def user_questioner():
     occasion_map = {
         0: "Promozione speciale",
         1: "Promemoria appuntamento",
-        2: "Nuovo prodotto disponibile",
-        3: "Ringraziamento per la fedeltà",
-        4: "Promozione stagionale",
-        5: "Compleanno",
+        2: "Ringraziamento per la fedeltà",
+        3: "Promozione stagionale",
+        4: "Compleanno",
+        5: "Promozione post vendita",
+        6: "Richiesta valutazione",
+        # 2: "Nuovo prodotto disponibile",
     }
     occasion_selected_key = create_pills(
         "Seleziona una opzione:", occasion_map, selection_mode="single"

@@ -1,11 +1,28 @@
 import streamlit as st
-from src.agent import GPTAgent, generate_follow_up_suggestions
+from src.agent import GPTAgent
 from src.constants import (
     FRONTEND_BOT_ICON,
     FRONTEND_USER_ICON,
 )
 from src.frontend_components.utils import show_selected_answers
 
+
+def reset_chat(messages_value: list | None = []) -> None:
+    st.session_state["messages"] = messages_value
+    st.session_state["pending_user_input"] = ""
+    st.session_state["follow_ups"] = []
+
+
+def process_first_automatic_bot_response(gpt_agent: GPTAgent):
+    assistant_response = ""
+    stream_response = gpt_agent.query_chat_message(st.session_state["messages"])
+
+    for chunk in stream_response:
+        assistant_response += chunk
+
+    st.session_state["messages"].append(
+        {"role": "assistant", "content": assistant_response}
+    )
 
 
 def process_and_display_gpt_streaming_response(
@@ -15,7 +32,7 @@ def process_and_display_gpt_streaming_response(
     assistant_response = ""
 
     with st.chat_message("assistant", avatar=bot_icon):
-        stream_response = gpt_agent.run(st.session_state["messages"])
+        stream_response = gpt_agent.query_chat_message(st.session_state["messages"])
 
         for chunk in stream_response:
             assistant_response += chunk
@@ -27,9 +44,9 @@ def process_and_display_gpt_streaming_response(
 
 
 def generate_follow_up_suggestion(gpt_agent: GPTAgent) -> str:
-    suggestions = generate_follow_up_suggestions(
-        gpt_agent, st.session_state["messages"]
-    )
+    messages = st.session_state["messages"]
+
+    suggestions = gpt_agent.generate_follow_ups(messages)
     st.session_state["follow_ups"] = suggestions
 
 
@@ -52,6 +69,9 @@ def handle_and_display_follow_up_suggestions() -> None:
 
 
 def display_conversation_history(user_icon: str, bot_icon: str) -> None:
+    if st.session_state["messages"] is None:
+        return
+
     for message in st.session_state["messages"]:
         if message["role"] == "system":
             continue
@@ -61,29 +81,44 @@ def display_conversation_history(user_icon: str, bot_icon: str) -> None:
             st.markdown(message["content"])
 
 
-
 def chat_component(
-    gpt_agent: GPTAgent,
     user_icon: str = FRONTEND_USER_ICON,
     bot_icon: str = FRONTEND_BOT_ICON,
 ) -> None:
+    gpt_agent = GPTAgent(
+        st.session_state.answers,
+        st.secrets["AZURE_OPENAI_API_KEY"],
+        st.secrets["AZURE_OPENAI_ENDPOINT"],
+        st.secrets["AZURE_OPENAI_MODEL_NAME"],
+    )
+
     # INITIALIZE SESSION STATES #######################################################################################
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = []
     if "follow_ups" not in st.session_state:
         st.session_state["follow_ups"] = []
 
     if "pending_user_input" not in st.session_state:
         st.session_state["pending_user_input"] = ""
 
+    if "messages" not in st.session_state or st.session_state["messages"] is None:
+        st.session_state["messages"] = []
+        process_first_automatic_bot_response(gpt_agent)
+        generate_follow_up_suggestion(gpt_agent)
+
     if "answers" in st.session_state:
         answers = st.session_state.answers
         st.subheader("Importazioni della comunicatione")
         show_selected_answers(answers)
 
-    if st.button("Cambia le mie esigenze", use_container_width=True):
-        st.session_state.page = "questions"
-        st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Cambia le mie esigenze", use_container_width=True):
+            st.session_state.page = "questions"
+            reset_chat(messages_value=None)
+            st.rerun()
+
+    with col2:
+        if st.button("Ricomincia la conversazione", use_container_width=True):
+            reset_chat()
 
     # Show existing messages
     display_conversation_history(user_icon, bot_icon)

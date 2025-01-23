@@ -1,14 +1,13 @@
 import streamlit as st
-from src.agent import GPTAgent
+
 from src.constants import (
-    FRONTEND_HTML_STYLES,
     FRONTEND_BOT_ICON,
+    FRONTEND_HTML_STYLES,
     FRONTEND_OIC_LOGO_URL,
     FRONTEND_USER_ICON,
 )
-
 from src.frontend_components.chat import chat_component
-from frontend_components.questionnaire import user_questioner
+from src.frontend_components.questionnaire import user_questioner
 
 
 def display_logo(oic_logo_url: str) -> None:
@@ -42,11 +41,6 @@ def main(
 ):
     st.set_page_config(page_title="OiC Bot", page_icon=oic_logo_url)
 
-    gpt_agent = GPTAgent(
-        st.secrets["AZURE_OPENAI_API_KEY"],
-        st.secrets["AZURE_OPENAI_ENDPOINT"],
-        st.secrets["AZURE_OPENAI_MODEL_NAME"],
-    )
     display_logo(oic_logo_url)
 
     if "page" not in st.session_state:
@@ -55,7 +49,7 @@ def main(
     if st.session_state.page == "questions":
         user_questioner()
     elif st.session_state.page == "chat":
-        chat_component(gpt_agent, user_icon, bot_icon)
+        chat_component(user_icon, bot_icon)
 
 
 if __name__ == "__main__":
