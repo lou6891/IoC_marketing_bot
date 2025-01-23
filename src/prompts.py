@@ -85,7 +85,7 @@ Grazie mille per la sua fiducia nel nostro negozio di ottica. <DATA_FINE_VALIDIT
 
 ESEMPTIO PROMEMORIA APPUNTAMENTO
 Ciao <NOME_CLIENT>! È quasi il momento del tuo controllo della vista! 
-Non vediamo l'ora di darti il benvenuto il giorno <DATA_APPUNTAMENTO> alle ore <ORA_APPUNTAMENT> in <INDIRIZZO_NEGOZIO>. 
+Non vediamo l'ora di darti il benvenuto il giorno <DATA_APPUNTAMENTO> alle ore <ORA_APPUNTAMENTO> in <INDIRIZZO_NEGOZIO>. 
 
 ESEMPIO MESSAGGIO DI PROMOZIONE SPECIALE
 Ciao <NOME_CLIENT>,
