@@ -6,11 +6,13 @@ from src.constants import (
 )
 from src.frontend_components.utils import show_selected_answers
 
+DEFAULT_FOLLOW_UP = ["Image generation"]
+
 
 def reset_chat(messages_value: list | None = []) -> None:
     st.session_state["messages"] = messages_value
     st.session_state["pending_user_input"] = ""
-    st.session_state["follow_ups"] = []
+    st.session_state["follow_ups"]: list = DEFAULT_FOLLOW_UP
 
 
 def process_first_automatic_bot_response(gpt_agent: GPTAgent):
@@ -47,7 +49,7 @@ def generate_follow_up_suggestion(gpt_agent: GPTAgent) -> str:
     messages = st.session_state["messages"]
 
     suggestions = gpt_agent.generate_follow_ups(messages)
-    st.session_state["follow_ups"] = suggestions
+    st.session_state["follow_ups"] = [*DEFAULT_FOLLOW_UP, *suggestions]
 
 
 def display_user_message_to_chat(chat_text: str, user_icon: str):
@@ -55,17 +57,28 @@ def display_user_message_to_chat(chat_text: str, user_icon: str):
         st.markdown(chat_text)
 
 
-def handle_and_display_follow_up_suggestions() -> None:
+def handle_and_display_follow_up_suggestions(gpt_agent: GPTAgent) -> None:
     if st.session_state["follow_ups"]:
         st.markdown("**Suggerimenti di follow-up:**")
         for i, suggestion in enumerate(st.session_state["follow_ups"], start=1):
-            if st.button(f"{i}. {suggestion}", key=f"follow_up_{i}"):
+            if suggestion != "Image generation" and st.button(
+                f"{i}. {suggestion}", key=f"follow_up_{i}"
+            ):
                 # add follow up to pending user input, which is needed to run the agent with the follow up question
                 st.session_state["pending_user_input"] = suggestion
 
                 # reset follow up, update the frontend
-                st.session_state["follow_ups"] = []
+                st.session_state["follow_ups"] = DEFAULT_FOLLOW_UP
                 st.rerun()
+
+            if suggestion == "Image generation":
+                with st.expander("Genera Immagine"):
+                    if st.button(
+                        f"Genera un'immagine data la conversazione",
+                        key="generate_image_",
+                    ):
+                        image = gpt_agent.generate_images(st.session_state["messages"])
+                        st.image(image)
 
 
 def display_conversation_history(user_icon: str, bot_icon: str) -> None:
@@ -94,7 +107,7 @@ def chat_component(
 
     # INITIALIZE SESSION STATES #######################################################################################
     if "follow_ups" not in st.session_state:
-        st.session_state["follow_ups"] = []
+        st.session_state["follow_ups"] = DEFAULT_FOLLOW_UP
 
     if "pending_user_input" not in st.session_state:
         st.session_state["pending_user_input"] = ""
@@ -139,4 +152,4 @@ def chat_component(
 
         generate_follow_up_suggestion(gpt_agent)
 
-    handle_and_display_follow_up_suggestions()
+    handle_and_display_follow_up_suggestions(gpt_agent)

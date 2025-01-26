@@ -4,13 +4,14 @@ from dotenv import load_dotenv
 from openai import AzureOpenAI
 from pydantic import BaseModel
 
-from src.prompts import FOLLOW_UP_SYSTEM_PROMPT, SYSTEM_PROMPT
+from src.prompts import FOLLOW_UP_SYSTEM_PROMPT, SYSTEM_PROMPT, IMAGE_PROMPT
 
 load_dotenv(override=True)
 
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_MODEL_NAME = os.getenv("AZURE_OPENAI_MODEL_NAME")
+AZURE_OPENAI_IMAGE_MODEL_NAME = os.getenv("AZURE_OPENAI_IMAGE_MODEL_NAME")
 
 
 class FollowUP(BaseModel):
@@ -28,14 +29,18 @@ class GPTAgent:
         api_key: str = AZURE_OPENAI_API_KEY,
         azure_endpoint: str = AZURE_OPENAI_ENDPOINT,
         model: str = AZURE_OPENAI_MODEL_NAME,
+        image_model: str = AZURE_OPENAI_IMAGE_MODEL_NAME,
     ) -> None:
         self.client = AzureOpenAI(
             api_key=api_key,
             azure_endpoint=azure_endpoint,
             api_version="2024-08-01-preview",
         )
-        self.model = model
 
+        self.model = model
+        self.image_model = image_model
+
+        self.user_form_answers = user_form_answers
         self.chat_system_prompt = self.generate_chat_system_prompt(user_form_answers)
         self.follow_up_system_prompt = self.generate_follow_up_system_prompt(
             user_form_answers
@@ -59,6 +64,18 @@ class GPTAgent:
             age=user_form_answers["age"],
             communication_type=user_form_answers["communication_type"],
             occasion=user_form_answers["occasion"],
+        )
+
+    @staticmethod
+    def generate_image_prompt(
+        user_form_answers: dict[str, list | str], chat_history: str
+    ) -> str:
+        return IMAGE_PROMPT.format(
+            shop_type=user_form_answers["shop_type"],
+            age=user_form_answers["age"],
+            communication_type=user_form_answers["communication_type"],
+            occasion=user_form_answers["occasion"],
+            chat_history=chat_history,
         )
 
     @staticmethod
@@ -130,3 +147,17 @@ class GPTAgent:
 
         content = response.choices[0].message.parsed
         return [question.text for question in content.questions]
+
+    def generate_images(self, conversation: list[dict]) -> str:
+        prompt = self.generate_image_prompt(self.user_form_answers, str(conversation))
+
+        response = self.client.images.generate(
+            model=self.image_model,
+            prompt=prompt,
+            n=1,
+            size="1024x1024",
+        )
+
+        url = response.data[0].url
+
+        return url
