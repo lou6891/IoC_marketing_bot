@@ -1,4 +1,5 @@
 import streamlit as st
+
 from src.agent import GPTAgent
 from src.constants import (
     FRONTEND_BOT_ICON,
@@ -57,7 +58,9 @@ def display_user_message_to_chat(chat_text: str, user_icon: str):
         st.markdown(chat_text)
 
 
-def handle_and_display_follow_up_suggestions(gpt_agent: GPTAgent) -> None:
+def handle_and_display_follow_up_suggestions(
+    gpt_agent: GPTAgent, enable_image_generation: str
+) -> None:
     if st.session_state["follow_ups"]:
         st.markdown("**Suggerimenti di follow-up:**")
         for i, suggestion in enumerate(st.session_state["follow_ups"], start=1):
@@ -71,7 +74,7 @@ def handle_and_display_follow_up_suggestions(gpt_agent: GPTAgent) -> None:
                 st.session_state["follow_ups"] = DEFAULT_FOLLOW_UP
                 st.rerun()
 
-            if suggestion == "Image generation":
+            if suggestion == "Image generation" and enable_image_generation:
                 with st.expander("Genera Immagine"):
                     if st.button(
                         f"Genera un'immagine data la conversazione",
@@ -94,6 +97,10 @@ def display_conversation_history(user_icon: str, bot_icon: str) -> None:
             st.markdown(message["content"])
 
 
+def convert_string_to_bool(string: str) -> bool:
+    return string.lower() in ["true", "1", "t", "y", "yes"]
+
+
 def chat_component(
     user_icon: str = FRONTEND_USER_ICON,
     bot_icon: str = FRONTEND_BOT_ICON,
@@ -103,6 +110,12 @@ def chat_component(
         st.secrets["AZURE_OPENAI_API_KEY"],
         st.secrets["AZURE_OPENAI_ENDPOINT"],
         st.secrets["AZURE_OPENAI_MODEL_NAME"],
+    )
+
+    if "ENABLE_IMAGE_GENERATION" not in st.secrets:
+        st.secrets["ENABLE_IMAGE_GENERATION"] = "False"
+    ENABLE_IMAGE_GENERATION = convert_string_to_bool(
+        st.secrets["ENABLE_IMAGE_GENERATION"]
     )
 
     # INITIALIZE SESSION STATES #######################################################################################
@@ -152,4 +165,4 @@ def chat_component(
 
         generate_follow_up_suggestion(gpt_agent)
 
-    handle_and_display_follow_up_suggestions(gpt_agent)
+    handle_and_display_follow_up_suggestions(gpt_agent, ENABLE_IMAGE_GENERATION)
