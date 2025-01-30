@@ -113,10 +113,11 @@ def chat_component(
     )
 
     if "ENABLE_IMAGE_GENERATION" not in st.secrets:
-        st.secrets["ENABLE_IMAGE_GENERATION"] = "False"
-    ENABLE_IMAGE_GENERATION = convert_string_to_bool(
-        st.secrets["ENABLE_IMAGE_GENERATION"]
-    )
+        ENABLE_IMAGE_GENERATION = False
+    else:
+        ENABLE_IMAGE_GENERATION = convert_string_to_bool(
+            st.secrets["ENABLE_IMAGE_GENERATION"]
+        )
 
     # INITIALIZE SESSION STATES #######################################################################################
     if "follow_ups" not in st.session_state:
