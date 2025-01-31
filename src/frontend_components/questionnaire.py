@@ -40,6 +40,9 @@ def user_questioner():
         2: "Sportivo",
         3: "Tecnico",
         4: "Sole",
+        5: "Vista (occhiali da vista)",
+        6: "Lenti a contatto",
+        7: "Controllo della vista",
     }
     shop_type_selected_keys = create_pills(
         "Seleziona una o più opzioni:", shop_type_map
