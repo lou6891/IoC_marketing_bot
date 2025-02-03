@@ -16,7 +16,7 @@ def reset_chat(messages_value: list | None = []) -> None:
     st.session_state["follow_ups"]: list = DEFAULT_FOLLOW_UP
 
 
-def process_first_automatic_bot_response(gpt_agent: GPTAgent):
+def process_first_automatic_bot_response(gpt_agent: GPTAgent) -> None:
     assistant_response = ""
     stream_response = gpt_agent.query_chat_message(st.session_state["messages"])
 
@@ -88,9 +88,14 @@ def display_conversation_history(user_icon: str, bot_icon: str) -> None:
     if st.session_state["messages"] is None:
         return
 
-    for message in st.session_state["messages"]:
+    for i, message in enumerate(st.session_state["messages"]):
         if message["role"] == "system":
             continue
+        
+        # Do not show the first message from the user, which is automatically created
+        if i == 1:
+            continue
+
         with st.chat_message(
             message["role"], avatar=user_icon if message["role"] == "user" else bot_icon
         ):
@@ -127,7 +132,19 @@ def chat_component(
         st.session_state["pending_user_input"] = ""
 
     if "messages" not in st.session_state or st.session_state["messages"] is None:
-        st.session_state["messages"] = []
+        answers = st.session_state.answers
+        st.session_state["messages"] = [{
+                "role": "user",
+                "content": f"""Data la tua abilita di marketing e le informazioni che sai sul mio target client, il tipo di promozione, l'occasione: 
+                Genera 3 messaggi promozionali. Questi devono avere 3 stili diversi ma  adatti alle informazioni date. 
+                Sii creativi, cerca di ispirare conversazioni e variazioni. Tieni come focus 
+                1. Tipo di negozio di ottica = {answers['shop_type']}
+                2. Fascia d'età del pubblico target = {answers['age']} 
+                3. Tono di voce = {answers['communication_type']}
+                4. Tipo di comunicazione = {answers['occasion']}
+                5. Tipo di promozione = {answers['promotion_type']}
+                """
+            }]
         process_first_automatic_bot_response(gpt_agent)
         generate_follow_up_suggestion(gpt_agent)
 
