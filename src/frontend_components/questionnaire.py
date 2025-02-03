@@ -107,6 +107,22 @@ def user_questioner():
         else None
     )
 
+    st.write("4. Quel tipo di promozione stai offrendo?")
+    promotion_type_map = {
+        0: "Buono Sconto di XX€",
+        1: "Sconto XX%",
+        2: "Montatura in Omaggio",
+        3: "Visita Gratuita",
+    }
+    promotion_type_selected_key = create_pills(
+        "Seleziona una opzione:", promotion_type_map, selection_mode="single"
+    )
+    answers["promotion_type"] = (
+        promotion_type_map[promotion_type_selected_key]
+        if isinstance(promotion_type_selected_key, int)
+        else None
+    )
+
     st.subheader("Le tue risposte")
 
     show_selected_answers(answers)

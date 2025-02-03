@@ -53,6 +53,7 @@ class GPTAgent:
             age=user_form_answers["age"],
             communication_type=user_form_answers["communication_type"],
             occasion=user_form_answers["occasion"],
+            promotion_type=user_form_answers["promotion_type"],
         )
 
     @staticmethod
@@ -64,6 +65,8 @@ class GPTAgent:
             age=user_form_answers["age"],
             communication_type=user_form_answers["communication_type"],
             occasion=user_form_answers["occasion"],
+            promotion_type=user_form_answers["promotion_type"],
+
         )
 
     @staticmethod
@@ -75,6 +78,7 @@ class GPTAgent:
             age=user_form_answers["age"],
             communication_type=user_form_answers["communication_type"],
             occasion=user_form_answers["occasion"],
+            promotion_type=user_form_answers["promotion_type"],
             chat_history=chat_history,
         )
 
