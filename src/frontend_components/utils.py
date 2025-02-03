@@ -29,3 +29,9 @@ def show_selected_answers(answers: dict) -> None:
         {answers["occasion"] if answers["occasion"] else "Non selezionato"}
         """
     )
+    col1.markdown(
+        f"""
+        **Tipo di Promozione:**  
+        {answers["promotion_type"] if answers["promotion_type"] else "Non selezionato"}
+        """
+    )

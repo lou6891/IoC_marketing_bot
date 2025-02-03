@@ -18,6 +18,7 @@ def verify_and_show_selected_answers(answers: dict) -> None:
         and answers["age"] is not None
         and answers["communication_type"] is not None
         and answers["occasion"] is not None
+        and answers["promotion_type"] is not None
     ):
         if st.button("Invia"):
             st.session_state.answers = answers
@@ -96,7 +97,8 @@ def user_questioner():
         4: "Compleanno",
         5: "Promozione post vendita",
         6: "Richiesta valutazione",
-        # 2: "Nuovo prodotto disponibile",
+        7: "Fine Scorte",
+        8: "Nuova Collezione",
     }
     occasion_selected_key = create_pills(
         "Seleziona una opzione:", occasion_map, selection_mode="single"
@@ -113,6 +115,8 @@ def user_questioner():
         1: "Sconto XX%",
         2: "Montatura in Omaggio",
         3: "Visita Gratuita",
+        4: "Nuova Collezione",
+        5 : "Nessuna delle opzioni"
     }
     promotion_type_selected_key = create_pills(
         "Seleziona una opzione:", promotion_type_map, selection_mode="single"
